@@ -1,10 +1,4 @@
-﻿// =============================================================
-// League.cpp
-// League 클래스의 실제 구현 파일.
-//
-// [수정사항] 팀 이름 출력 칸을 26칸으로 넓혀 정렬 안정성을 대폭 향상했습니다.
-// =============================================================
-
+﻿
 #include "League.h"   // League 클래스, Fixture 구조체
 #include "Match.h"    // playMatch() 함수
 #include "Utils.h"    // randInt(), printLine()
@@ -15,34 +9,27 @@
 #include <vector>
 #include <string>
 
-
-// =============================================================
-// League 기본 생성자
-// =============================================================
+// 기본 생성자
 League::League()
     : currentFixtureIdx(0), leagueFinished(false) {}
 
-
-// =============================================================
-// init()
-// =============================================================
 void League::init(const std::string& playerTeamName) {
     teams.clear();
     fixtures.clear();
     currentFixtureIdx = 0;
     leagueFinished = false;
 
-    // 1단계: 플레이어 팀 생성 및 추가 (무조건 0번 인덱스)
+    // 플레이어 팀 생성 및 추가
     Team player(playerTeamName);
     teams.push_back(std::move(player));
 
-    // 2단계: AI 팀 생성 및 추가 (1번 ~ 19번 인덱스)
+    // AI 팀 생성 및 추가
     for (int i = 0; i < 19; ++i) {
         Team ai(TEAM_NAMES[i]);
         teams.push_back(std::move(ai));
     }
 
-    // 3단계: 라운드 로빈 방식으로 38라운드 일정 생성
+    // 38라운드 일정 생성
     int totalTeams = 20;
     int rounds = 38;
 
@@ -82,8 +69,7 @@ void League::init(const std::string& playerTeamName) {
         for (const auto& f : roundFixtures) {
             fixtures.push_back(f);
         }
-
-        // 라운드 로빈 회전
+        
         int last = scheduleIndices[totalTeams - 1];
         for (int i = totalTeams - 1; i > 1; --i) {
             scheduleIndices[i] = scheduleIndices[i - 1];
@@ -93,9 +79,6 @@ void League::init(const std::string& playerTeamName) {
 }
 
 
-// =============================================================
-// nextPlayerFixtureIdx()
-// =============================================================
 int League::nextPlayerFixtureIdx() const {
     for (int i = currentFixtureIdx; i < (int)fixtures.size(); ++i) {
         if (!fixtures[i].played && (fixtures[i].homeIdx == 0 || fixtures[i].awayIdx == 0)) {
@@ -106,9 +89,6 @@ int League::nextPlayerFixtureIdx() const {
 }
 
 
-// =============================================================
-// nextOpponentName()
-// =============================================================
 std::string League::nextOpponentName() const {
     int idx = nextPlayerFixtureIdx();
     if (idx < 0) {
@@ -121,10 +101,6 @@ std::string League::nextOpponentName() const {
     return teams[opponentIdx].name;
 }
 
-
-// =============================================================
-// simulateAIMatches()
-// =============================================================
 void League::simulateAIMatches(int upToFixtureIdx) {
     for (int i = currentFixtureIdx; i < upToFixtureIdx && i < (int)fixtures.size(); ++i) {
         auto& f = fixtures[i];
@@ -136,10 +112,6 @@ void League::simulateAIMatches(int upToFixtureIdx) {
     }
 }
 
-
-// =============================================================
-// playPlayerMatch()
-// =============================================================
 MatchResult League::playPlayerMatch(Tactic tactic) {
     int idx = nextPlayerFixtureIdx();
     if (idx < 0) return MatchResult::DRAW;
@@ -178,10 +150,6 @@ MatchResult League::playPlayerMatch(Tactic tactic) {
     return score.resultForHome;
 }
 
-
-// =============================================================
-// getSortedTeamIndices()
-// =============================================================
 std::vector<int> League::getSortedTeamIndices() const {
     std::vector<int> indices(teams.size());
     for (int i = 0; i < (int)teams.size(); ++i) {
@@ -206,14 +174,9 @@ std::vector<int> League::getSortedTeamIndices() const {
     return indices;
 }
 
-
-// =============================================================
-// printStandings() - [팀 이름 공간 26칸 확장 버전]
-// =============================================================
 void League::printStandings() const {
     auto sorted = getSortedTeamIndices();
-
-    // 상단 가이드라인 폭도 확장된 팀 이름 칸에 맞춰 넓혔습니다.
+    
     std::cout << "\n=========================================================================\n";
     std::cout << " 순위 | 팀 이름                       | 승점 | 승 | 무 | 패 | 득 | 실 \n";
     std::cout << "-------------------------------------------------------------------------\n";
@@ -224,7 +187,6 @@ void League::printStandings() const {
 
         std::string marker = (idx == 0) ? ">" : " ";
 
-        // 문자열을 순회하며 콘솔에서 실제 차지하는 칸수(Width) 계산
         int visualWidth = 0;
         for (size_t k = 0; k < t.name.size(); ) {
             unsigned char c = static_cast<unsigned char>(t.name[k]);
@@ -242,8 +204,7 @@ void League::printStandings() const {
                 else k += 1;
             }
         }
-
-        // 목표 출력 폭을 26칸으로 늘렸습니다.
+        
         int targetWidth = 26;
         int neededSpaces = targetWidth - visualWidth;
         if (neededSpaces < 0) neededSpaces = 0; 
@@ -270,17 +231,11 @@ void League::printStandings() const {
 }
 
 
-// =============================================================
-// isFinished()
-// =============================================================
 bool League::isFinished() const {
     return leagueFinished;
 }
 
 
-// =============================================================
-// playedMatches()
-// =============================================================
 int League::playedMatches() const {
     int cnt = 0;
     for (const auto& f : fixtures)
@@ -289,17 +244,11 @@ int League::playedMatches() const {
 }
 
 
-// =============================================================
-// totalMatches()
-// =============================================================
 int League::totalMatches() const {
     return 38;
 }
 
 
-// =============================================================
-// playerRank()
-// =============================================================
 int League::playerRank() const {
     auto sorted = getSortedTeamIndices();
     for (int i = 0; i < (int)sorted.size(); ++i) {

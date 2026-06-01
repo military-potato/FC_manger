@@ -1,8 +1,4 @@
-﻿// =============================================================
-// Game.cpp
-// Game 클래스의 실제 구현 파일.
-// 게임의 전체 흐름(시작, 메인 루프, 각 메뉴 처리)을 담당한다.
-// =============================================================
+﻿
 
 #include "Game.h"     // Game 클래스 선언
 #include "Trade.h"    // runTrades() (트레이드 진행)
@@ -14,19 +10,7 @@
 #include <cctype>     // tolower() (영어 소문자 변환에 사용)
 
 
-// =============================================================
-// toLower() - 내부 함수
-// 문자열의 영어 대문자를 소문자로 변환한다.
-// 영어 명령어(schedule, roster 등)를 대소문자 구분 없이 처리하기 위해 사용.
-//
-// 예: "Schedule" -> "schedule", "ROSTER" -> "roster"
-//
-// 주의: 한글 문자는 건드리지 않는다.
-//       tolower()에 한글 바이트를 넣으면 깨질 수 있으므로
-//       (unsigned char)로 변환해서 ASCII 범위(0~127)만 처리한다.
-//
-// static: 이 파일 안에서만 사용하는 내부 함수
-// =============================================================
+
 static std::string toLower(std::string s) {
     for (auto& c : s)                       // 문자열의 각 문자를 순회
         c = (char)tolower((unsigned char)c); // ASCII 문자만 소문자로 변환
@@ -35,35 +19,25 @@ static std::string toLower(std::string s) {
 
 int tradeCount = 0;
 
-
-// =============================================================
 // Game 기본 생성자
-// 멤버 변수를 초기값으로 설정한다.
-//   lastMatchResult = DRAW: 게임 시작 전이라 아직 경기가 없으므로 임의로 DRAW
-//   hasPlayedMatch  = false: 아직 경기를 진행하지 않은 상태
-// =============================================================
 Game::Game()
     : lastMatchResult(MatchResult::DRAW), hasPlayedMatch(false) {}
 
-
-// =============================================================
-// start()
-// 게임 시작 처리. 타이틀 출력, 팀 이름 입력, 리그 초기화.
-// =============================================================
+// 게임 시작
 void Game::start() {
     printLine();
     std::cout << "  Rising Eleven\n";
     std::cout << "눈떠보니 과거로 돌아간 당신. 선수의 능력이 보이는 능력을 얻게 되는데...\n다시 주어진 기회, 리그 우승을 노려보세요!\n";
     printLine();
 
-    // 팀 이름 입력받기
+    // 팀 이름 입력
     std::cout << "팀 이름을 입력하세요: ";
-    std::getline(std::cin, playerTeamName);  // 한 줄 전체를 팀 이름으로 받음
+    std::getline(std::cin, playerTeamName);
 
-    // 아무것도 입력하지 않으면 기본 이름 사용
-    if (playerTeamName.empty()) playerTeamName = "My Team";
+    // 아무것도 입력하지 않으면 기본 이름
+    if (playerTeamName.empty()) playerTeamName = "Player";
 
-    // 리그 초기화: 플레이어 팀 + AI 팀 19개 생성, 경기 일정 380개 생성
+    // 리그 초기화: 플레이어 팀 + AI 팀 19개 생성, 경기 일정 생성
     league.init(playerTeamName);
 
     std::cout << "\n[" << playerTeamName << "] 창단 완료!\n";
@@ -71,30 +45,19 @@ void Game::start() {
     waitEnter();
 }
 
-
-
-// =============================================================
-// run()
-// 게임의 메인 루프. start()로 초기화 후 명령어를 반복해서 처리한다.
-// "종료" 명령어가 입력되거나 새 시즌을 시작하지 않으면 루프가 끝난다.
-// =============================================================
+// 게임 메인 루프
 void Game::run() {
-    start();  // 게임 초기화 (타이틀, 팀 이름 입력, 리그 생성)
-	
-    // 게임 메인 루프: 종료 조건을 만날 때까지 반복
+    start();
+    
     while (true) {
-        showMainMenu();  // 현재 상태와 명령어 목록 출력
-
-        // 명령어 입력받기
+        showMainMenu();
+        
         std::cout << "명령어 입력: ";
         std::string cmd;
-        if (!std::getline(std::cin, cmd)) break;  // 입력 스트림이 닫히면(EOF) 루프 종료
-
-        // 영어 명령어 비교를 위해 소문자로 변환한 버전도 준비
-        // 한글 명령어는 cmd 원본으로 비교, 영어 명령어는 cmdLower로 비교
+        if (!std::getline(std::cin, cmd)) break;
+        
         std::string cmdLower = toLower(cmd);
-
-        // 입력된 명령어에 따라 해당 기능 실행
+        
         if (cmd == "1") {
             // 리그가 이미 끝났으면 안내 메시지만 출력
             if (league.isFinished()) {
@@ -111,16 +74,16 @@ void Game::run() {
             waitEnter();
         } else if (cmd == "5") {
             std::cout << "\n게임을 종료합니다. 진행 상황은 저장되지 않습니다.\n";
-            break;             // while 루프 탈출 -> 게임 종료
+            break;             // 게임 종료
         } else {
-            // 위의 어느 명령어도 해당하지 않으면
+            // 예외처리
             std::cout << "알 수 없는 명령어입니다.\n";
         }
 
-        // 명령어 처리 후 리그가 끝났는지 확인 (마지막 경기 진행 직후 true가 됨)
+        // 리그가 끝났는지 확인
         if (league.isFinished()) {
             std::cout << "\n리그전이 모두 종료되었습니다!\n";
-            league.printStandings();  // 최종 리그 순위표 출력
+            league.printStandings();  // 최종 리그 순위표
             waitEnter();
 
             std::cout << "플레이오프를 시작합니다.\n";
@@ -130,8 +93,7 @@ void Game::run() {
             std::string champion = runPlayoff(league);
 
             waitEnter();
-
-            // 새 시즌 여부 결정
+            
             std::cout << "\n새 시즌을 시작하시겠습니까?\n";
             std::cout << "(1) 현재 팀으로 새 시즌  (2) 게임 종료\n입력: ";
             std::string ans;
@@ -141,58 +103,53 @@ void Game::run() {
                 // 새 시즌: 선수 명단/포메이션/전술은 유지하고 성적만 초기화
 				tradeCount = 0;
                 // 현재 플레이어 팀 데이터 백업
-                std::vector<Player> savedRoster     = league.teams[0].roster;         // 선수 명단
-                int                 savedFormation  = league.teams[0].formationIndex;  // 포메이션
-                Tactic              savedTactic      = league.teams[0].tactic;          // 전술
+                std::vector<Player> savedRoster     = league.teams[0].roster;
+                int                 savedFormation  = league.teams[0].formationIndex;  
+                Tactic              savedTactic      = league.teams[0].tactic;          
 
                 // 리그 전체 초기화 (AI 팀 새로 생성, 일정 새로 생성)
                 league.init(playerTeamName);
 
-                // 백업해둔 플레이어 팀 데이터 복원
-                league.teams[0].roster         = savedRoster;      // 선수 명단 복원
-                league.teams[0].formationIndex = savedFormation;   // 포메이션 복원
-                league.teams[0].tactic         = savedTactic;       // 전술 복원
-                league.teams[0].applyFormation();                  // 복원된 포메이션으로 역할 재배정
+                // 팀 데이터 복원
+                league.teams[0].roster         = savedRoster;
+                league.teams[0].formationIndex = savedFormation;
+                league.teams[0].tactic         = savedTactic;
+                league.teams[0].applyFormation();
 
-                hasPlayedMatch = false;  // 새 시즌이므로 첫 경기 여부 초기화
+                hasPlayedMatch = false;
 
                 std::cout << "\n새 시즌이 시작되었습니다!\n";
                 waitEnter();
             } else {
                 // 새 시즌을 선택하지 않으면 게임 종료
                 std::cout << "\n게임을 종료합니다.\n";
-                break;  // while 루프 탈출
+                break;
             }
         }
     }
 }
 
 
-// =============================================================
-// showMainMenu()
-// 메인 메뉴를 출력한다.
-// 현재 팀 상태(경기 수, 순위, 승점, 다음 상대)와 명령어 목록을 보여준다.
-// =============================================================
+
+// 메인 메뉴 출력
 void Game::showMainMenu() {
     printLine();
-
-    // 현재 리그 진행 상황 요약
+    
     int played = league.playedMatches();  // 지금까지 진행한 경기 수
     std::cout << "【" << playerTeamName << "】"
-              << "  리그 " << played << "/" << league.totalMatches() << "경기"  // 예: "리그 5/38경기"
-              << "  |  순위: " << league.playerRank() << "위"                   // 예: "순위: 3위"
-              << "  |  승점: " << league.teams[0].displayPoints() << "\n";      // 예: "승점: 12"
+              << "  리그 " << played << "/" << league.totalMatches() << "경기"
+              << "  |  순위: " << league.playerRank() << "위"   
+              << "  |  승점: " << league.teams[0].displayPoints() << "\n";
 
-    // 리그가 아직 진행 중이면 다음 상대 표시
+    // 다음 상대 표시
     if (!league.isFinished()) {
         std::string opp = league.nextOpponentName();  // 다음 경기 상대 이름
         if (!opp.empty())
-            std::cout << "다음 상대: " << opp << "\n";  // 예: "다음 상대: Red Dragons FC"
+            std::cout << "다음 상대: " << opp << "\n";
     }
 
     printLine();
-
-    // 사용 가능한 명령어 목록 출력
+    
     std::cout << " (1) 일정     - 다음 경기 진행\n";
     std::cout << " (2) 로스터   - 선수 확인 및 포메이션 변경\n";
     std::cout << " (3) 트레이드 - 선수 트레이드\n";
@@ -201,44 +158,35 @@ void Game::showMainMenu() {
     printLine();
 }
 
-
-// =============================================================
-// chooseTactic()
 // 3가지 전술을 출력하고 플레이어가 번호를 입력해 선택하게 한다.
-// 반환된 Tactic 값은 doSchedule()에서 playPlayerMatch()로 전달된다.
-// =============================================================
+
 Tactic Game::chooseTactic() {
     printLine();
     std::cout << "전술을 선택하세요:\n";
-    std::cout << "  1. 공격적 전술\n";   // 기획서 6.2.2
+    std::cout << "  1. 공격적 전술\n";
     std::cout << "  2. 균형적 전술\n";
     std::cout << "  3. 수비적 전술\n";
     std::cout << "입력 (1~3): ";
 
-    int t = -1;  // 유효하지 않은 초기값
+    int t = -1;
 
-    // 1~3 범위의 유효한 입력이 들어올 때까지 반복
+    // 예외처리
     while (t < 1 || t > 3) {
         std::string s;
-        std::getline(std::cin, s);                        // 한 줄 입력
-        try { t = std::stoi(s); } catch (...) { t = -1; } // 정수 변환 시도, 실패하면 -1
+        std::getline(std::cin, s);
+        try { t = std::stoi(s); } catch (...) { t = -1; }
         if (t < 1 || t > 3)
             std::cout << "1~3 중에 입력하세요: ";
     }
-
-    // 입력 번호를 Tactic 열거형으로 변환해서 반환
+    
     switch (t) {
-        case 1: return Tactic::ATTACK;   // 1 -> 공격 전술
-        case 2: return Tactic::BALANCE;  // 2 -> 균형 전술
-        default: return Tactic::DEFENSE; // 3 -> 수비 전술 (default로 처리)
+        case 1: return Tactic::ATTACK;
+        case 2: return Tactic::BALANCE;
+        default: return Tactic::DEFENSE;
     }
 }
 
-
-// =============================================================
-// doSchedule()
-// "일정" 명령어 처리. 다음 경기를 진행한다.
-// =============================================================
+// 다음 경기 진행
 void Game::doSchedule() {
     int fixtureIdx = league.nextPlayerFixtureIdx();
     if (fixtureIdx < 0) {
@@ -246,15 +194,14 @@ void Game::doSchedule() {
         return; 
     }
 
-    // 1. league 객체 내부의 경기 일정(fixture)과 상대 팀 인덱스를 가져옵니다.
+    // league 객체 내부의 경기 일정(fixture)과 상대 팀 인덱스를 가져옵니다.
     const auto& f = league.fixtures[fixtureIdx];
     bool playerIsHome = (f.homeIdx == 0);
     int oppIdx = playerIsHome ? f.awayIdx : f.homeIdx;
     
-    // 상대 팀 객체 직접 참조 (루프 없음)
+    // 상대 팀 객체 직접 참조
     const Team& oppTeam = league.teams[oppIdx];
-
-    // [변경] 프리뷰 시점에는 AI 연산을 수행하지 않고, 저장되어 있는 상대의 현재 상태만 보여줍니다.
+    
     printLine();
     std::cout << "[ 매치 프리뷰 ]\n";
     std::cout << "-- 다음 상대 --\n";
@@ -265,11 +212,11 @@ void Game::doSchedule() {
 
     std::cout << "\n[" << playerTeamName << "] "
               << tacticToString(tactic) << " 선택!\n";
-    waitEnter();  // 경기 시작 전 잠시 대기
+    waitEnter();
 
-    // 2. 플레이어 경기 진행
+    // 플레이어 경기 진행
     lastMatchResult = league.playPlayerMatch(tactic);
-    hasPlayedMatch  = true;  // 첫 경기 완료 표시 (이제 트레이드 가능)
+    hasPlayedMatch  = true;
 
     // 경기 결과 출력
     std::cout << "\n결과: ";
@@ -283,49 +230,40 @@ void Game::doSchedule() {
         tradeCount += 1; 
     }
     waitEnter();
-
-    // 모든 AI 경기가 마감되어 완벽히 동기화된 순위표를 출력합니다.
+    
     league.printStandings(); 
     waitEnter();
 }
 
 
-// =============================================================
-// doRoster()
-// "로스터" 명령어 처리. 선수 명단을 출력하고 포메이션 변경 여부를 묻는다.
-// =============================================================
-void Game::doRoster() {
-    league.teams[0].printRoster();  // 플레이어 팀(teams[0])의 로스터 출력
 
-    // 포메이션 변경 여부 확인
+// 선수 명단을 출력하고 포메이션 변경
+void Game::doRoster() {
+    league.teams[0].printRoster();  // 플레이어 팀 로스터 출력
+    
     std::cout << "\n포메이션을 변경하시겠습니까? ( 1 입력 시 진행 ): ";
     std::string ans;
     std::getline(std::cin, ans);
 
     if (ans == "1")
-        changeFormationMenu();  // 포메이션 변경 서브메뉴 진입
+        changeFormationMenu();  // 포메이션 변경 진입
     else
-        waitEnter();  // 변경하지 않으면 메인 메뉴로 돌아감
+        waitEnter();
 }
 
-
-// =============================================================
-// changeFormationMenu()
-// 포메이션 변경 서브메뉴. 10가지 포메이션을 보여주고 선택받는다.
-// =============================================================
+// 포메이션 변경
 void Game::changeFormationMenu() {
     printLine();
     std::cout << "포메이션 선택:\n";
 
-    // FORMATION_COUNT (=10)만큼 반복하며 포메이션 목록 출력
+    // 포메이션 목록 출력
     for (int i = 0; i < (int)FORMATION_COUNT; ++i)
-        std::cout << (i + 1) << ". " << FORMATIONS[i].label << "\n";  // 예: "1. 3-5-2"
+        std::cout << (i + 1) << ". " << FORMATIONS[i].label << "\n";
 
     std::cout << "번호 입력 (1~10): ";
 
-    int pick = -1;  // 유효하지 않은 초기값
-
-    // 1~10 범위의 유효한 입력이 들어올 때까지 반복
+    int pick = -1;
+    
     while (pick < 1 || pick > 10) {
         std::string s;
         std::getline(std::cin, s);
@@ -334,15 +272,15 @@ void Game::changeFormationMenu() {
             std::cout << "1~10 중에 입력하세요: ";
     }
 
-    // 1. 포메이션 인덱스 변경 (배열 인덱스는 0부터이므로 pick-1)
+    // 포메이션 인덱스 변경
     league.teams[0].formationIndex = pick - 1;
 
-    // 2. 원래 로스터 복제 (백업)
+    // 원래 로스터 복제
     std::vector<Player> tempRoster = league.teams[0].roster;
     
-    // 새로운 배치를 담을 벡터 (기존 크기만큼 확보)
+    // 새로운 벡터
     std::vector<Player> newRoster(10);
-    // 어떤 번호가 이미 선택되었는지 체크하는 배열 (중복 입력 방지)
+    // 중복 입력 방지
     bool chosen[10] = { false, };
 
     std::cout << "\n[새 포메이션 선수 재배치]\n";
@@ -356,28 +294,25 @@ void Game::changeFormationMenu() {
             std::string s;
             std::getline(std::cin, s);
             try { playerNum = std::stoi(s); } catch (...) { playerNum = -1; }
-
-            // 유효성 검사 (1~10 사이의 숫자여야 함)
+            
             if (playerNum < 1 || playerNum > 10) {
                 std::cout << "1에서 10 사이의 숫자만 입력 가능합니다.\n";
                 continue;
             }
-            // 중복 검사 (이미 배치한 선수인지 확인)
+            // 중복 검사
             if (chosen[playerNum - 1]) {
                 std::cout << "이미 배치된 선수입니다. 다른 번호를 입력하세요.\n";
                 continue;
             }
-
-            // 통과 시 루프 탈출
             break;
         }
 
-        // 선택 표시 및 새로운 로스터 배열에 복사 (인덱스는 0부터이므로 -1)
+        // 새로운 로스터 배열에 복사
         chosen[playerNum - 1] = true;
         newRoster[i] = tempRoster[playerNum - 1];
     }
 
-    // 3. 재배치된 로스터를 팀에 적용하고 포메이션 역할 재배정
+    // 재배치된 로스터를 팀에 적용
     league.teams[0].roster = newRoster;
     league.teams[0].applyFormation();
 
@@ -387,17 +322,13 @@ void Game::changeFormationMenu() {
 }
 
 
-// =============================================================
-// doTrade()
-// "트레이드" 명령어 처리.
-// 첫 경기 전이면 트레이드 불가 안내, 이후엔 runTrades() 호출.
-// =============================================================
+
+// 트레이드
 void Game::doTrade() {
     if (!hasPlayedMatch) {
-        // 아직 한 경기도 진행하지 않은 상태
         std::cout << "트레이드는 첫 경기 이후부터 가능합니다.\n";
         waitEnter();
-        return;  // 함수 종료
+        return;
     }
 	else if (tradeCount == 0) {
 		std::cout << "남은 트레이드 횟수가 없습니다.\n";
